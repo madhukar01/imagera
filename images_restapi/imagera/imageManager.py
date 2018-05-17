@@ -1,7 +1,7 @@
 import os
 from django.core.files.storage import default_storage
 
-storage = '/image_storage/'
+storage = os.getcwd() + '/image_storage/'
 imageTypes = ['image/png', 'image/jpeg', 'image/gif']
 
 """
@@ -29,7 +29,7 @@ def validateImage(imgType):
 
 def storeImage(inputKey, inputFile):
     """ Function to store the uploaded image """
-    folder = storage + inputKey + inputFile.name
+    folder = storage + inputKey + "/" + inputFile.name
 
     if not os.path.exists(folder):
         default_storage.save(folder, inputFile)
@@ -40,7 +40,7 @@ def storeImage(inputKey, inputFile):
 
 def getImagePath(inputKey, inputName):
     """ Function to get path of the image """
-    folder = storage + inputKey + inputName
+    folder = storage + inputKey + "/" + inputName
 
     if not os.path.exists(folder):
         return False

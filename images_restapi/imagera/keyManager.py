@@ -1,7 +1,7 @@
 from random import choice
 from string import ascii_letters, digits
 import os
-storage = '/image_storage/'
+storage = os.getcwd() + '/image_storage/'
 
 """
 Functions to manage access keys and respective folders
