@@ -1,56 +1,58 @@
-import os
 from django.core.files.storage import default_storage
+import os
 
 storage = os.getcwd() + '/image_storage/'
-imageTypes = ['image/png', 'image/jpeg', 'image/gif']
+image_types = ['image/png', 'image/jpeg', 'image/gif']
 
 """
 Functions to handle upload, retrieve, update and delete images
 """
 
-def getImageList(key):
-    """ Function to return images list of a access key """
+
+def get_image_list(key):
+    """Function to return images list of a access key"""
     folder = storage + key
 
     if not os.path.exists(folder):
         ans = ("Error", key)
         return ans
-        
     else:
         images_list = ("Success", os.listdir(folder))
         return images_list
 
-def validateImage(imgType):
-    """ Function to validate image types """
-    if imgType in imageTypes:
+
+def validate_image(imgtype):
+    """Function to validate image types"""
+    if imgtype in image_types:
         return True
     else:
         return False
 
-def storeImage(inputKey, inputFile):
-    """ Function to store the uploaded image """
-    folder = storage + inputKey + "/" + inputFile.name
+
+def store_image(inputkey, inputfile):
+    """Function to store the uploaded image"""
+    folder = storage + inputkey + "/" + inputfile.name
 
     if not os.path.exists(folder):
-        default_storage.save(folder, inputFile)
+        default_storage.save(folder, inputfile)
         return True
-    
     else:
         return False
 
-def getImagePath(inputKey, inputName):
-    """ Function to get path of the image """
-    folder = storage + inputKey + "/" + inputName
+
+def get_image_path(inputkey, inputName):
+    """Function to get path of the image"""
+    folder = storage + inputkey + "/" + inputName
 
     if not os.path.exists(folder):
         return False
-    
     else:
         return folder
 
-def updateImage(inputKey, inputName, imageFile):
-    """ Function to replace existing image with uploaded image """
-    folder = getImagePath(inputKey, inputName)
+
+def update_image(inputkey, inputName, imagefile):
+    """Function to replace existing image with uploaded image"""
+    folder = get_image_path(inputkey, inputName)
 
     if folder is not False:
         try:
@@ -58,14 +60,15 @@ def updateImage(inputKey, inputName, imageFile):
         except OSError:
             return False
         else:
-            default_storage.save(folder, imageFile)
+            default_storage.save(folder, imagefile)
             return True
     else:
         return False
 
-def deleteImage(inputKey, inputName):
-    """ Function to delete image """
-    folder = getImagePath(inputKey, inputName)
+
+def delete_image(inputkey, inputName):
+    """Function to delete image"""
+    folder = get_image_path(inputkey, inputName)
 
     if folder is not False:
         try:
@@ -74,6 +77,5 @@ def deleteImage(inputKey, inputName):
             return False
         else:
             return True
-    
     else:
         return False
