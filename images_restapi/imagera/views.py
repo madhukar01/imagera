@@ -9,7 +9,7 @@ from string import ascii_letters, digits
 storage = os.getcwd() + '/image_storage/'
 
 
-class generate_key(APIView):
+class GenerateKey(APIView):
     """
     Class to generate access key
     """
@@ -19,7 +19,7 @@ class generate_key(APIView):
         return Response(data={"Message": ans, "Access key": key}, status=200)
 
 
-class change_key(APIView):
+class ChangeKey(APIView):
     """
     Class to regenerate access key
     """
@@ -45,7 +45,7 @@ class change_key(APIView):
                                 status=200, content_type="text/html")
 
 
-class image_list_manager(APIView):
+class ImageListManager(APIView):
     """
     Images list manager
     """
@@ -65,8 +65,8 @@ class image_list_manager(APIView):
                                 status=403)
 
             else:
-                ans = "\n".join(images_list[1])
-                return Response(data={"Image List: ": ans}, status=200)
+                ans = ", ".join(images_list[1])
+                return Response(data={"Image List": ans}, status=200)
 
     def post(self, request, format=None):
         inputkey = request.GET['key']
@@ -97,7 +97,7 @@ class image_list_manager(APIView):
                 return Response(data={"Message": ans}, status=403)
 
 
-class image_detail_manager(APIView):
+class ImageDetailManager(APIView):
     """
     Image detail manager
     """
@@ -117,7 +117,7 @@ class image_detail_manager(APIView):
                     return HttpResponse(f.read(), content_type="image/jpeg")
 
             else:
-                ans = "No image was found with given name\n"
+                ans = "No image was found with given name"
                 return Response(data={"Message": ans}, status=403)
 
     def patch(self, request, format=None):
@@ -158,7 +158,7 @@ class image_detail_manager(APIView):
 
         else:
             if(image_manager.delete_image(inputkey, inputname)):
-                ans = "Image deletec successfully"
+                ans = "Image deleted successfully"
                 return Response(data={"Message": ans}, status=201)
 
             else:
