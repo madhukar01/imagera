@@ -65,8 +65,8 @@ class ImageListManager(APIView):
                                 status=403)
 
             else:
-                ans = "\n".join(images_list[1])
-                return Response(data={"Image List: ": ans}, status=200)
+                ans = ", ".join(images_list[1])
+                return Response(data={"Image List": ans}, status=200)
 
     def post(self, request, format=None):
         inputkey = request.GET['key']
@@ -117,7 +117,7 @@ class ImageDetailManager(APIView):
                     return HttpResponse(f.read(), content_type="image/jpeg")
 
             else:
-                ans = "No image was found with given name\n"
+                ans = "No image was found with given name"
                 return Response(data={"Message": ans}, status=403)
 
     def patch(self, request, format=None):
@@ -158,7 +158,7 @@ class ImageDetailManager(APIView):
 
         else:
             if(image_manager.delete_image(inputkey, inputname)):
-                ans = "Image deletec successfully"
+                ans = "Image deleted successfully"
                 return Response(data={"Message": ans}, status=201)
 
             else:
