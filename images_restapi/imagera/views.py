@@ -9,158 +9,170 @@ from string import ascii_letters, digits
 storage = os.getcwd() + '/image_storage/'
 
 
+def key_validator(fn):
+    """
+    Decorator function to handle access key validation
+    """
+    def wrapper(param1, request, format=None):
+        if(request.method == "GET"):
+            inputkey = request.GET['key']
+        else:
+            inputkey = request.POST['key']
+
+        # If given key does not exist, Exception is obtained
+        try:
+            key_manager.validate_key(inputkey)
+        except FileNotFoundError:
+            ans = "Access key does not exist, Please register !"
+            return Response(data={"Message": ans, "Key": inputkey},
+                            status=403, content_type="application/json")
+        else:
+            return fn(param1, request, format=None)
+    return wrapper
+
+
 class GenerateKey(APIView):
     """
     Class to generate access key
     """
     def get(self, request, format=None):
+
+        # Generate a new key and create folders for it
         key = key_manager.generate_key_create_folder()
         ans = "Access key generation successful !"
-        return Response(data={"Message": ans, "Access key": key}, status=200)
+        return Response(data={"Message": ans, "Key": key},
+                        status=200, content_type="application/json")
 
 
 class ChangeKey(APIView):
     """
     Class to regenerate access key
     """
-    def get(self, request, format=None):
-        inputkey = request.GET['key']
-        if(key_manager.validate_key(inputkey) is False):
-            ans = "Access key does not exist, Please register !"
-            return Response(data={"Message": ans, "Access key": inputkey},
-                            status=403)
+    @key_validator
+    def post(self, request, format=None):
+        inputkey = request.POST['key']
 
-        else:
-            keyObj = key_manager.regenerate_key(inputkey)
-
-            if(keyObj[0] == "Error"):
-                ans = "Access key does not exist, Please register !"
-                return Response(data={"Message": ans, "Access key": inputkey},
-                                status=403)
-
-            elif(keyObj[0] == "Success"):
-                ans = "Access key regeneration successful !"
-                return Response(data={"Message": ans,
-                                "New access key": keyObj[1]},
-                                status=200, content_type="text/html")
+        # Renmae existing folder with new key
+        key = key_manager.regenerate_key(inputkey)
+        ans = "Access key regeneration successful !"
+        return Response(data={"Message": ans, "Key": key},
+                        status=200, content_type="application/json")
 
 
 class ImageListManager(APIView):
     """
     Images list manager
     """
+    @key_validator
     def get(self, request, format=None):
         inputkey = request.GET['key']
-        if(key_manager.validate_key(inputkey) is False):
-            ans = "Access key does not exist, Please register !"
-            return Response(data={"Message": ans, "Access key": inputkey},
-                            status=403)
 
-        else:
-            images_list = image_manager.get_image_list(inputkey)
+        # Obtain list of images inside folder of the key
+        images_list = image_manager.get_image_list(inputkey)
+        ans = ", ".join(images_list)
+        return Response(data={"Images": ans}, status=200,
+                        content_type="application/json")
 
-            if(images_list[0] == "Error"):
-                ans = "Access key does not exist, Please register !"
-                return Response(data={"Message": ans, "Access key": inputkey},
-                                status=403)
-
-            else:
-                ans = ", ".join(images_list[1])
-                return Response(data={"Image List": ans}, status=200)
-
+    @key_validator
     def post(self, request, format=None):
-        inputkey = request.GET['key']
-        if(key_manager.validate_key(inputkey) is False):
-            ans = "Access key does not exist, Please register !"
-            return Response(data={"Message": ans, "Access key": inputkey},
-                            status=403)
+        inputkey = request.POST['key']
+        image_file = request.data.get("file")
 
-        else:
-            image_file = request.data.get("file")
-
-            if (image_file is not None):
-                if(image_manager.validate_image(image_file.content_type)):
-                    if(image_manager.store_image(inputkey, image_file)):
-                        ans = "Image uploaded successful"
-                        return Response(data={"Message": ans}, status=201)
-
-                    else:
-                        ans = "File name already exist"
-                        return Response(data={"Message": ans}, status=403)
-
-                else:
-                    ans = "File type not supported"
-                    return Response(data={"Message": ans}, status=403)
-
+        # Check if file has been sent with request
+        if (image_file is not None):
+            try:
+                # Check if file sent is an image
+                image_manager.validate_image(image_file.content_type)
+            except TypeError:
+                ans = "File type not supported"
+                return Response(data={"Message": ans}, status=403,
+                                content_type="application/json")
             else:
-                ans = "No input file was found"
-                return Response(data={"Message": ans}, status=403)
+                try:
+                    image_manager.store_image(inputkey, image_file)
+
+                # Check if there is already a file with same name
+                except FileExistsError:
+                    ans = "File name already exist"
+                    return Response(data={"Message": ans}, status=403,
+                                    content_type="application/json")
+                else:
+                    ans = "Image uploaded successfully"
+                    return Response(data={"Message": ans}, status=201,
+                                    content_type="application/json")
+        else:
+            ans = "No input file was uploaded"
+            return Response(data={"Message": ans}, status=403,
+                            content_type="application/json")
 
 
 class ImageDetailManager(APIView):
     """
     Image detail manager
     """
+    @key_validator
     def get(self, request, format=None):
         inputkey = request.GET['key']
         inputname = request.GET['name']
-        if(key_manager.validate_key(inputkey) is False):
-            ans = "Access key does not exist, Please register !"
-            return Response(data={"Message": ans, "Access key": inputkey},
-                            status=403)
 
-        else:
+        # If image with given name does not exist, exception is obtained
+        try:
             temp = image_manager.get_image_path(inputkey, inputname)
+        except FileNotFoundError:
+            ans = "No image was found with given name"
+            return Response(data={"Message": ans}, status=403,
+                            content_type="application/json")
+        else:
+            with open(temp, 'rb') as f:
+                return HttpResponse(f.read(), content_type="image/jpeg")
 
-            if(temp is not False):
-                with open(temp, 'rb') as f:
-                    return HttpResponse(f.read(), content_type="image/jpeg")
-
-            else:
-                ans = "No image was found with given name"
-                return Response(data={"Message": ans}, status=403)
-
+    @key_validator
     def patch(self, request, format=None):
-        inputkey = request.GET['key']
-        inputname = request.GET['name']
-        if(key_manager.validate_key(inputkey) is False):
-            ans = "Access key does not exist, Please register !"
-            return Response(data={"Message": ans, "Access key": inputkey},
-                            status=403)
+        inputkey = request.data.get('key')
+        inputname = request.data.get('name')
+        image_file = request.data.get("file")
 
-        else:
-            image_file = request.data.get("file")
-
-            if(image_file is not None):
-                if(image_manager.validate_image(image_file.content_type)):
-                    if(image_manager.update_image(
-                            inputkey, inputname, image_file)):
-                        ans = "Image update successful"
-                        return Response(data={"Message": ans}, status=201)
-
-                    else:
-                        ans = "No image found with given name"
-                        return Response(data={"Message": ans}, status=403)
+        # Check if file was sent with request
+        if(image_file is not None):
+            try:
+                # Check if file is an image
+                image_manager.validate_image(image_file.content_type)
+            except TypeError:
+                ans = "File type not supported"
+                return Response(data={"Message": ans}, status=403,
+                                content_type="application/json")
+            else:
+                try:
+                    # Replace existing image with new image
+                    image_manager.update_image(
+                            inputkey, inputname, image_file)
+                except FileNotFoundError:
+                    ans = "No image found with given name"
+                    return Response(data={"Message": ans}, status=403,
+                                    content_type="application/json")
                 else:
-                    ans = "File type not supported"
-                    return Response(data={"Message": ans}, status=403)
-            else:
-                ans = "No input file was found"
-                return Response(data={"Message": ans}, status=403)
-
-    def delete(self, request, format=None):
-        inputkey = request.GET['key']
-        inputname = request.GET['name']
-        if(key_manager.validate_key(inputkey) is False):
-            ans = "Access key does not exist, Please register !"
-            return Response(data={"Message": ans, "Access key": inputkey},
-                            status=403)
+                    ans = "Image updated successfully"
+                    return Response(data={"Message": ans}, status=201,
+                                    content_type="application/json")
 
         else:
-            if(image_manager.delete_image(inputkey, inputname)):
-                ans = "Image deleted successfully"
-                return Response(data={"Message": ans}, status=201)
+            ans = "No input file was uploaded"
+            return Response(data={"Message": ans}, status=403,
+                            content_type="application/json")
 
-            else:
-                ans = "No image found with given name"
-                return Response(data={"Message": ans}, status=403)
+    @key_validator
+    def delete(self, request, format=None):
+        inputkey = request.data.get('key')
+        inputname = request.data.get('name')
+
+        # If no image was found with given name, Exception is obtained
+        try:
+            image_manager.delete_image(inputkey, inputname)
+        except FileNotFoundError:
+            ans = "No image found with given name"
+            return Response(data={"Message": ans}, status=403,
+                            content_type="application/json")
+        else:
+            ans = "Image deleted successfully"
+            return Response(data={"Message": ans},
+                            status=201, content_type="application/json")
