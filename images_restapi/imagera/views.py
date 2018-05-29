@@ -19,6 +19,7 @@ def key_validator(fn):
         else:
             inputkey = request.POST['key']
 
+        # If given key does not exist, Exception is obtained
         try:
             key_manager.validate_key(inputkey)
         except FileNotFoundError:
@@ -35,6 +36,8 @@ class GenerateKey(APIView):
     Class to generate access key
     """
     def get(self, request, format=None):
+
+        # Generate a new key and create folders for it
         key = key_manager.generate_key_create_folder()
         ans = "Access key generation successful !"
         return Response(data={"Message": ans, "Key": key},
@@ -48,6 +51,8 @@ class ChangeKey(APIView):
     @key_validator
     def post(self, request, format=None):
         inputkey = request.POST['key']
+
+        # Renmae existing folder with new key
         key = key_manager.regenerate_key(inputkey)
         ans = "Access key regeneration successful !"
         return Response(data={"Message": ans, "Key": key},
@@ -61,6 +66,8 @@ class ImageListManager(APIView):
     @key_validator
     def get(self, request, format=None):
         inputkey = request.GET['key']
+
+        # Obtain list of images inside folder of the key
         images_list = image_manager.get_image_list(inputkey)
         ans = ", ".join(images_list)
         return Response(data={"Images": ans}, status=200,
@@ -71,8 +78,10 @@ class ImageListManager(APIView):
         inputkey = request.POST['key']
         image_file = request.data.get("file")
 
+        # Check if file has been sent with request
         if (image_file is not None):
             try:
+                # Check if file sent is an image
                 image_manager.validate_image(image_file.content_type)
             except TypeError:
                 ans = "File type not supported"
@@ -81,6 +90,8 @@ class ImageListManager(APIView):
             else:
                 try:
                     image_manager.store_image(inputkey, image_file)
+
+                # Check if there is already a file with same name
                 except FileExistsError:
                     ans = "File name already exist"
                     return Response(data={"Message": ans}, status=403,
@@ -104,6 +115,7 @@ class ImageDetailManager(APIView):
         inputkey = request.GET['key']
         inputname = request.GET['name']
 
+        # If image with given name does not exist, exception is obtained
         try:
             temp = image_manager.get_image_path(inputkey, inputname)
         except FileNotFoundError:
@@ -116,12 +128,14 @@ class ImageDetailManager(APIView):
 
     @key_validator
     def patch(self, request, format=None):
-        inputkey = request.POST['key']
-        inputname = request.POST['name']
+        inputkey = request.data.get('key')
+        inputname = request.data.get('name')
         image_file = request.data.get("file")
 
+        # Check if file was sent with request
         if(image_file is not None):
             try:
+                # Check if file is an image
                 image_manager.validate_image(image_file.content_type)
             except TypeError:
                 ans = "File type not supported"
@@ -129,6 +143,7 @@ class ImageDetailManager(APIView):
                                 content_type="application/json")
             else:
                 try:
+                    # Replace existing image with new image
                     image_manager.update_image(
                             inputkey, inputname, image_file)
                 except FileNotFoundError:
@@ -147,9 +162,10 @@ class ImageDetailManager(APIView):
 
     @key_validator
     def delete(self, request, format=None):
-        inputkey = request.POST['key']
-        inputname = request.POST['name']
+        inputkey = request.data.get('key')
+        inputname = request.data.get('name')
 
+        # If no image was found with given name, Exception is obtained
         try:
             image_manager.delete_image(inputkey, inputname)
         except FileNotFoundError:

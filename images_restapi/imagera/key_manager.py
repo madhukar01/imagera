@@ -14,6 +14,7 @@ def gen_key():
     key = ''.join(choice(ascii_letters + digits) for _ in range(16))
     folder = storage + key
 
+    # Repeat until key generated does not exist
     while(os.path.exists(folder)):
         key = ''.join(choice(ascii_letters + digits) for _ in range(16))
         folder = storage + key
